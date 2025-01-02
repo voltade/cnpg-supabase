@@ -44,6 +44,7 @@ RUN set -xe; \
 
 # Install barman-cloud
 RUN set -xe; \
+  pip install psycopg2-binary; \
   # TODO: Remove --no-deps once https://github.com/pypa/pip/issues/9644 is solved
   pip install --no-deps -r requirements.txt; \
   rm -rf /var/lib/apt/lists/*;
