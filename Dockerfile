@@ -1,50 +1,100 @@
-FROM supabase/postgres:15.8.1.021
+ARG debian_version=bookworm
+ARG postgresql_major=17
+ARG postgresql_release=${postgresql_major}.2
 
-ENV PG_MAJOR=15
+# https://github.com/jedisct1/libsodium/releases
+ARG libsodium_release=1.0.18
+# https://github.com/supabase/vault/releases
+ARG vault_release=0.2.9
 
-# https://github.com/cloudnative-pg/postgres-containers/blob/main/Debian/15/bookworm/Dockerfile
+FROM postgres:${postgresql_release}-${debian_version} AS builder
+ARG postgresql_major
+RUN apt update && apt install -y --no-install-recommends \
+  build-essential \
+  checkinstall \
+  cmake \
+  postgresql-server-dev-${postgresql_major}
 
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-# 
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+FROM builder AS libsodium-source
+ARG libsodium_release
+ADD "https://github.com/jedisct1/libsodium/releases/download/${libsodium_release}-RELEASE/libsodium-${libsodium_release}.tar.gz" \
+  /tmp/libsodium.tar.gz
+RUN tar -xvf /tmp/libsodium.tar.gz -C /tmp && \
+  rm -rf /tmp/libsodium.tar.gz
+# Build from source
+WORKDIR /tmp/libsodium-${libsodium_release}
+RUN ./configure
+RUN make -j$(nproc)
+RUN make install
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
-COPY requirements.txt .
+FROM builder AS vault-source
+ARG vault_release
+# Download and extract
+ADD "https://github.com/supabase/vault/archive/refs/tags/v${vault_release}.tar.gz" \
+  /tmp/vault.tar.gz
+RUN tar -xvf /tmp/vault.tar.gz -C /tmp && \
+  rm -rf /tmp/vault.tar.gz
+# Build from source
+WORKDIR /tmp/vault-${vault_release}
+RUN make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
-# Install additional extensions
-# https://www.ubuntuupdates.org/package/postgresql/focal-pgdg/main/base/postgresql-15-pg-failover-slots
-# https://wiki.postgresql.org/wiki/Apt
-RUN set -xe; \
-  apt-get update; \
-  apt-get install -y --no-install-recommends postgresql-common; \
-  /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y; \
-  apt-get install -y --no-install-recommends \
-  "postgresql-${PG_MAJOR}-pg-failover-slots" \
-  ; \
-  rm -fr /tmp/* ; \
-  rm -rf /var/lib/apt/lists/*;
+# https://github.com/cloudnative-pg/postgres-containers
+FROM ghcr.io/cloudnative-pg/postgresql:${postgresql_release}-${debian_version}
 
-# Install python3.9 an pip (python3.8 shipped with ubuntu 20.04 is not compatible with barman-cloud's dependencies)
-# https://stackoverflow.com/questions/65644782/how-to-install-pip-for-python-3-9-on-ubuntu-20-04
-RUN set -xe; \
-  add-apt-repository ppa:deadsnakes/ppa; \
-  apt-get purge --auto-remove -y python3; \
-  apt-get update; \
-  apt-get install --no-install-recommends -y python3.9 python3.9-distutils; \
-  curl -q https://bootstrap.pypa.io/get-pip.py -o get-pip.py; \
-  python3.9 get-pip.py;
+ARG postgresql_major
 
-# Install barman-cloud
-RUN set -xe; \
-  pip install psycopg2-binary; \
-  # TODO: Remove --no-deps once https://github.com/pypa/pip/issues/9644 is solved
-  pip install --no-deps -r requirements.txt; \
-  rm -rf /var/lib/apt/lists/*;
+USER root
+
+# PGDATA is set in tembo-pg-slim and used by dependents on this image.
+RUN if [ -z "${PGDATA}" ]; then echo "PGDATA is not set"; exit 1; fi
+
+# Install trunk
+COPY --from=quay.io/tembo/tembo-pg-cnpg:17-3f42399 /usr/bin/trunk /usr/bin/trunk
+
+RUN trunk install pg_stat_statements
+RUN trunk install auto_explain
+RUN trunk install pg_cron
+RUN trunk install pgaudit
+RUN trunk install pgjwt
+RUN trunk install pgsql_http
+RUN trunk install plpgsql_check
+RUN trunk install timescaledb
+RUN trunk install wal2json
+RUN trunk install plv8
+RUN trunk install pg_net
+RUN trunk install rum
+RUN trunk install pg_hashids
+RUN trunk install pgsodium
+RUN trunk install pg_stat_monitor
+RUN trunk install pg_jsonschema
+RUN trunk install pg_repack
+RUN trunk install wrappers
+RUN trunk install hypopg
+RUN trunk install pgvector
+RUN trunk install pg_tle
+RUN trunk install index_advisor
+RUN trunk install supautils
+
+# cache pg_stat_statements and auto_explain and pg_stat_kcache to temp directory
+RUN set -eux; \
+  mkdir /tmp/pg_pkglibdir; \
+  mkdir /tmp/pg_sharedir; \
+  cp -r $(pg_config --pkglibdir)/* /tmp/pg_pkglibdir; \
+  cp -r $(pg_config --sharedir)/* /tmp/pg_sharedir
+
+COPY --from=libsodium-source /tmp/*.deb /tmp/
+COPY --from=vault-source /tmp/*.deb /tmp/
+
+RUN apt update && apt install -y --no-install-recommends \
+  /tmp/*.deb \
+  && rm -rf /var/lib/apt/lists/* /tmp/*
+
+# libs installed with checkinstall are not in the default library path
+ENV LD_LIBRARY_PATH=/usr/local/lib
+
+# Revert the postgres user to id 26
+RUN usermod -u 26 postgres
+USER 26
