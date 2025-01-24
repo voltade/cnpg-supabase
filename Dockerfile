@@ -4,6 +4,8 @@ ARG postgresql_release=${postgresql_major}.2
 
 # https://github.com/jedisct1/libsodium/releases
 ARG libsodium_release=1.0.18
+# https://github.com/eradman/pg-safeupdate/tags
+ARG pg_safeupdate_release=1.5
 # https://github.com/supabase/vault/releases
 ARG vault_release=0.2.9
 
@@ -26,6 +28,20 @@ WORKDIR /tmp/libsodium-${libsodium_release}
 RUN ./configure
 RUN make -j$(nproc)
 RUN make install
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+
+FROM builder AS pg-safeupdate-source
+ARG pg_safeupdate_release
+# Download and extract
+ADD "https://github.com/eradman/pg-safeupdate/archive/refs/tags/${pg_safeupdate_release}.tar.gz" \
+  /tmp/pg-safeupdate.tar.gz
+RUN tar -xvf /tmp/pg-safeupdate.tar.gz -C /tmp && \
+  rm -rf /tmp/pg-safeupdate.tar.gz
+# Build from source
+WORKDIR /tmp/pg-safeupdate-${pg_safeupdate_release}
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+  make -j$(nproc)
+# Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 FROM builder AS vault-source
@@ -86,6 +102,7 @@ RUN set -eux; \
   cp -r $(pg_config --sharedir)/* /tmp/pg_sharedir
 
 COPY --from=libsodium-source /tmp/*.deb /tmp/
+COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
 COPY --from=vault-source /tmp/*.deb /tmp/
 
 RUN apt update && apt install -y --no-install-recommends \
