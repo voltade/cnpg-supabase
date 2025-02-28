@@ -113,6 +113,8 @@ RUN apt update && apt install -y --no-install-recommends \
 # libs installed with checkinstall are not in the default library path
 ENV LD_LIBRARY_PATH=/usr/local/lib
 
+COPY ./extension/* /usr/share/postgresql/${postgresql_major}/extension/
+
 # Revert the postgres user to id 26
 RUN usermod -u 26 postgres
 USER 26
