@@ -117,4 +117,4 @@ ENV LD_LIBRARY_PATH=/usr/local/lib
 RUN usermod -u 26 postgres
 USER 26
 
-COPY --chown=postgres:postgres ./extension/pgsodium_getkey /usr/share/postgresql/${postgresql_major}/extension/pgsodium_getkey
+COPY --chown=26:26 --chmod=755 ./extension/pgsodium_getkey /usr/share/postgresql/${postgresql_major}/extension/pgsodium_getkey
