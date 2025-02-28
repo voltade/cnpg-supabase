@@ -3,7 +3,8 @@ ARG postgresql_major=17
 ARG postgresql_release=${postgresql_major}.4
 
 # https://github.com/jedisct1/libsodium/releases
-ARG libsodium_release=1.0.20
+# The current pgsodium (3.1.9) requires libsodium.so.23
+ARG libsodium_release=1.0.18
 # https://github.com/eradman/pg-safeupdate/tags
 ARG pg_safeupdate_release=1.5
 # https://github.com/supabase/vault/releases
