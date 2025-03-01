@@ -7,6 +7,8 @@ ARG postgresql_release=${postgresql_major}.4
 ARG libsodium_release=1.0.18
 # https://github.com/eradman/pg-safeupdate/tags
 ARG pg_safeupdate_release=1.5
+# https://github.com/pgexperts/pg_plan_filter/commits/master/
+ARG pg_plan_filter_release=5081a7b5cb890876e67d8e7486b6a64c38c9a492
 # https://github.com/supabase/vault/releases
 ARG vault_release=0.2.9
 
@@ -17,6 +19,9 @@ RUN apt update && apt install -y --no-install-recommends \
   checkinstall \
   cmake \
   postgresql-server-dev-${postgresql_major}
+
+# For extensions not supported by trunk (https://pgt.dev/), build from source
+# Reference: https://github.com/supabase/postgres/blob/release/15.6/Dockerfile
 
 FROM builder AS libsodium-source
 ARG libsodium_release
@@ -44,6 +49,18 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
   make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+
+FROM builder as pg_plan_filter-source
+# Download and extract
+ARG pg_plan_filter_release
+ADD "https://github.com/pgexperts/pg_plan_filter.git#${pg_plan_filter_release}" \
+  /tmp/pg_plan_filter-${pg_plan_filter_release}
+# Build from source
+WORKDIR /tmp/pg_plan_filter-${pg_plan_filter_release}
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+  make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=1 --nodoc
 
 FROM builder AS vault-source
 ARG vault_release
@@ -104,6 +121,7 @@ RUN set -eux; \
 
 COPY --from=libsodium-source /tmp/*.deb /tmp/
 COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
+COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
 COPY --from=vault-source /tmp/*.deb /tmp/
 
 RUN apt update && apt install -y --no-install-recommends \
