@@ -123,6 +123,7 @@ RUN trunk install plv8
 RUN trunk install rum
 RUN trunk install pg_hashids
 RUN trunk install pgsodium
+RUN trunk install pg_graphql
 RUN trunk install pg_stat_monitor
 RUN trunk install pg_jsonschema
 RUN trunk install pg_repack
