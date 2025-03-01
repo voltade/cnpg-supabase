@@ -7,6 +7,8 @@ ARG postgresql_release=${postgresql_major}.4
 ARG libsodium_release=1.0.18
 # https://github.com/eradman/pg-safeupdate/tags
 ARG pg_safeupdate_release=1.5
+# https://github.com/supabase/pg_net/releases
+ARG pg_net_release=0.14.0
 # https://github.com/pgexperts/pg_plan_filter/commits/master/
 ARG pg_plan_filter_release=5081a7b5cb890876e67d8e7486b6a64c38c9a492
 # https://github.com/supabase/vault/releases
@@ -50,7 +52,27 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
-FROM builder as pg_plan_filter-source
+FROM builder AS pg_net-source
+# Download and extract
+ARG pg_net_release
+ARG pg_net_release_checksum
+ADD --checksum=${pg_net_release_checksum} \
+  "https://github.com/supabase/pg_net/archive/refs/tags/v${pg_net_release}.tar.gz" \
+  /tmp/pg_net.tar.gz
+RUN tar -xvf /tmp/pg_net.tar.gz -C /tmp && \
+  rm -rf /tmp/pg_net.tar.gz
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  libcurl4-gnutls-dev \
+  && rm -rf /var/lib/apt/lists/*
+# Build from source
+WORKDIR /tmp/pg_net-${pg_net_release}
+RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccache \
+  make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --requires=libcurl3-gnutls --nodoc
+
+FROM builder AS pg_plan_filter-source
 # Download and extract
 ARG pg_plan_filter_release
 ADD "https://github.com/pgexperts/pg_plan_filter.git#${pg_plan_filter_release}" \
@@ -98,7 +120,6 @@ RUN trunk install plpgsql_check
 RUN trunk install timescaledb
 RUN trunk install wal2json
 RUN trunk install plv8
-RUN trunk install pg_net
 RUN trunk install rum
 RUN trunk install pg_hashids
 RUN trunk install pgsodium
@@ -121,6 +142,7 @@ RUN set -eux; \
 
 COPY --from=libsodium-source /tmp/*.deb /tmp/
 COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
+COPY --from=pg_net-source /tmp/*.deb /tmp/
 COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
 COPY --from=vault-source /tmp/*.deb /tmp/
 
