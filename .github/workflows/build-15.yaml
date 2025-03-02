@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - v*
+      - v15.*
 
 env:
   REGISTRY: ghcr.io
@@ -48,6 +48,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: "{context}/15.8.Dockerfile"
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
