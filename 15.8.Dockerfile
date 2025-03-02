@@ -38,3 +38,9 @@ RUN set -xe; \
   python3.9 -m pip install --no-cache-dir --upgrade pip; \
   python3.9 -m pip install --no-cache-dir --no-deps -r requirements.txt; \
   rm -rf /var/lib/apt/lists/*;
+
+# Revert the postgres user to id 26
+RUN usermod -u 26 postgres
+USER 26
+
+COPY --chown=26:26 --chmod=755 ./extension/pgsodium_getkey /usr/share/postgresql/${postgresql_major}/extension/pgsodium_getkey
