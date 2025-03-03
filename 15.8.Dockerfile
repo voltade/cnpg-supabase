@@ -1,8 +1,6 @@
 # https://github.com/supabase/postgres/blob/15.8.1.047/Dockerfile-15
 FROM supabase/postgres:15.8.1.047
 
-ARG postgresql_major=15
-
 # Setup Postgresql PPA: https://www.ubuntuupdates.org/ppa/postgresql?dist=focal-pgdg
 RUN set -xe; \
   sudo apt install curl ca-certificates gnupg; \
@@ -49,4 +47,4 @@ RUN set -xe; \
 RUN usermod -u 26 postgres
 USER 26
 
-COPY --chown=26:26 --chmod=755 ./extension/pgsodium_getkey /usr/share/postgresql/${postgresql_major}/extension/pgsodium_getkey
+COPY --chown=26:26 --chmod=755 ./extension/pgsodium_getkey /usr/share/postgresql/extension/pgsodium_getkey
