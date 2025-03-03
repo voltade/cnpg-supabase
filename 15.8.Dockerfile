@@ -1,6 +1,7 @@
+# https://github.com/supabase/postgres/blob/15.8.1.047/Dockerfile-15
 FROM supabase/postgres:15.8.1.047
 
-COPY requirements.txt /
+ARG postgresql_major=15
 
 # Setup Postgresql PPA: https://www.ubuntuupdates.org/ppa/postgresql?dist=focal-pgdg
 RUN set -xe; \
@@ -23,9 +24,13 @@ RUN set -xe; \
   rm -fr /tmp/* ; \
   rm -rf /var/lib/apt/lists/*;
 
+COPY requirements.txt /
+
 # Install Python 3.9 and barman-cloud
 RUN set -xe; \
   apt-get update; \
+  apt-get remove -y python3.8 python3.8-minimal python3-minimal python3; \
+  apt-get autoremove -y; \
   apt-get install -y --no-install-recommends \
   python3.9 \
   python3.9-distutils \
@@ -35,8 +40,9 @@ RUN set -xe; \
   curl -sS https://bootstrap.pypa.io/get-pip.py | python3.9; \
   update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 1; \
   update-alternatives --install /usr/bin/python python /usr/bin/python3.9 1; \
-  python3.9 -m pip install --no-cache-dir --upgrade pip; \
-  python3.9 -m pip install --no-cache-dir --no-deps -r requirements.txt; \
+  pip install --no-cache-dir --upgrade pip; \
+  pip install --no-cache-dir --no-deps -r requirements.txt; \
+  pip install psycopg2-binary; \
   rm -rf /var/lib/apt/lists/*;
 
 # Revert the postgres user to id 26
