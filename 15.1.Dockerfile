@@ -1,11 +1,12 @@
-# https://github.com/supabase/postgres/blob/15.1.1.78/Dockerfile-15
+# https://github.com/supabase/postgres/blob/15.1.1.78/Dockerfile
 FROM supabase/postgres:15.1.1.78
 
 # Setup Postgresql PPA: https://www.ubuntuupdates.org/ppa/postgresql?dist=focal-pgdg
 RUN set -xe; \
-  sudo apt install curl ca-certificates gnupg; \
-  curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/apt.postgresql.org.gpg >/dev/null; \
-  sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main" >> /etc/apt/sources.list.d/postgresql.list';
+  apt-get update; \
+  apt-get install -y curl ca-certificates gnupg; \
+  curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/apt.postgresql.org.gpg >/dev/null; \
+  sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ focal-pgdg main" >> /etc/apt/sources.list.d/postgresql.list';
 
 # Add deadsnakes PPA for Python 3.9
 RUN set -xe; \
