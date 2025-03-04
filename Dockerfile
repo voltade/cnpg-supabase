@@ -97,7 +97,7 @@ RUN make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
-# https://github.com/cloudnative-pg/postgres-containers
+# https://github.com/cloudnative-pg/postgres-containers/blob/main/Debian/17/bookworm/Dockerfile
 FROM ghcr.io/cloudnative-pg/postgresql:${postgresql_release}-${debian_version}
 
 ARG postgresql_major

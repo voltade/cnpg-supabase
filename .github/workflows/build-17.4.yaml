@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - v17.*
+      - v17.4*
 
 env:
   REGISTRY: ghcr.io
