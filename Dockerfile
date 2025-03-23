@@ -62,7 +62,7 @@ ADD --checksum=${pg_net_release_checksum} \
 RUN tar -xvf /tmp/pg_net.tar.gz -C /tmp && \
   rm -rf /tmp/pg_net.tar.gz
 # Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt update && apt install -y --no-install-recommends \
   libcurl4-gnutls-dev \
   && rm -rf /var/lib/apt/lists/*
 # Build from source
@@ -97,9 +97,9 @@ RUN make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
-# https://github.com/cloudnative-pg/postgres-containers?tab=readme-ov-file#system-images
+# https://github.com/cloudnative-pg/postgres-containers?tab=readme-ov-file#minimal-images
 # https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql/versions?filters%5Bversion_type%5D=tagged
-FROM ghcr.io/cloudnative-pg/postgresql:${postgresql_release}-standard-${debian_version}
+FROM ghcr.io/cloudnative-pg/postgresql:${postgresql_release}-minimal-${debian_version}
 ARG postgresql_major
 USER root
 
@@ -126,7 +126,6 @@ COPY --from=quay.io/tembo/tembo-pg-cnpg:17-bffd097 /usr/bin/trunk /usr/bin/trunk
 RUN trunk install pg_stat_statements
 RUN trunk install auto_explain
 RUN trunk install pg_cron
-# RUN trunk install pgaudit
 RUN trunk install pgjwt
 RUN trunk install pgsql_http
 RUN trunk install plpgsql_check
@@ -141,12 +140,38 @@ RUN trunk install pg_jsonschema
 RUN trunk install pg_repack
 RUN trunk install wrappers
 RUN trunk install hypopg
-# RUN trunk install pgvector
+RUN trunk install pgvector
 RUN trunk install pg_tle
 RUN trunk install index_advisor
 RUN trunk install supautils
 
 RUN rm -rf /tmp/* /usr/bin/trunk
+
+# Install pg-failover-slots
+RUN set -xe; \
+  apt update; \
+  apt install -y --no-install-recommends \
+  "postgresql-${postgresql_major}-pgaudit" \
+  "postgresql-${postgresql_major}-pg-failover-slots"; \
+  apt purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+  rm -rf /var/lib/apt/lists/* /var/cache/* /var/log/*;
+
+# Install barman-cloud
+COPY requirements.17.txt ./requirements.txt
+RUN set -xe; \
+  apt update; \
+  apt install -y --no-install-recommends \
+  # We require build-essential and python3-dev to build lz4 on arm64 since there isn't a pre-compiled wheel available
+  build-essential python3-dev \
+  python3-pip \
+  python3-psycopg2 \
+  python3-setuptools \
+  ; \
+  pip3 install --break-system-packages --upgrade pip; \
+  # TODO: Remove --no-deps once https://github.com/pypa/pip/issues/9644 is solved
+  pip3 install --break-system-packages --no-deps -r requirements.txt; \
+  apt remove -y --purge --autoremove build-essential python3-dev; \
+  rm -rf /var/lib/apt/lists/* /var/cache/* /var/log/* requirements.txt;
 
 # libs installed with checkinstall are not in the default library path
 ENV LD_LIBRARY_PATH=/usr/local/lib
@@ -155,4 +180,5 @@ ENV LD_LIBRARY_PATH=/usr/local/lib
 RUN usermod -u 26 postgres
 USER 26
 
+# Copy the getkey script for pgsodium
 COPY --chown=26:26 --chmod=755 ./extension/pgsodium_getkey /usr/share/postgresql/${postgresql_major}/extension/pgsodium_getkey
