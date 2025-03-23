@@ -15,6 +15,7 @@ ARG vault_release=0.3.1
 
 FROM postgres:${postgresql_release}-${debian_version} AS builder
 ARG postgresql_major
+
 RUN apt update && apt install -y --no-install-recommends \
   build-essential \
   checkinstall \
@@ -98,11 +99,25 @@ RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 # https://github.com/cloudnative-pg/postgres-containers?tab=readme-ov-file#system-images
 # https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql/versions?filters%5Bversion_type%5D=tagged
-FROM ghcr.io/cloudnative-pg/postgresql:${postgresql_release}-6-${debian_version}
-
+FROM ghcr.io/cloudnative-pg/postgresql:${postgresql_release}-standard-${debian_version}
 ARG postgresql_major
-
 USER root
+
+# cache pg_stat_statements and auto_explain and pg_stat_kcache to temp directory
+RUN set -eux; \
+  mkdir /tmp/pg_pkglibdir; \
+  mkdir /tmp/pg_sharedir; \
+  cp -r $(pg_config --pkglibdir)/* /tmp/pg_pkglibdir; \
+  cp -r $(pg_config --sharedir)/* /tmp/pg_sharedir
+
+COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
+COPY --from=pg_net-source /tmp/*.deb /tmp/
+COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
+COPY --from=vault-source /tmp/*.deb /tmp/
+
+RUN apt update && apt install -y --no-install-recommends \
+  /tmp/*.deb \
+  && rm -rf /var/lib/apt/lists/* /tmp/*
 
 # Install trunk
 # https://quay.io/repository/tembo/tembo-pg-cnpg?tab=tags
@@ -126,27 +141,12 @@ RUN trunk install pg_jsonschema
 RUN trunk install pg_repack
 RUN trunk install wrappers
 RUN trunk install hypopg
-RUN trunk install pgvector
+# RUN trunk install pgvector
 RUN trunk install pg_tle
 RUN trunk install index_advisor
 RUN trunk install supautils
 
-# cache pg_stat_statements and auto_explain and pg_stat_kcache to temp directory
-RUN set -eux; \
-  mkdir /tmp/pg_pkglibdir; \
-  mkdir /tmp/pg_sharedir; \
-  cp -r $(pg_config --pkglibdir)/* /tmp/pg_pkglibdir; \
-  cp -r $(pg_config --sharedir)/* /tmp/pg_sharedir
-
-COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
-COPY --from=pg_net-source /tmp/*.deb /tmp/
-COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
-# COPY --from=pgaudit-source /tmp/*.deb /tmp/
-COPY --from=vault-source /tmp/*.deb /tmp/
-
-RUN apt update && apt install -y --no-install-recommends \
-  /tmp/*.deb \
-  && rm -rf /var/lib/apt/lists/* /tmp/*
+RUN rm -rf /tmp/* /usr/bin/trunk
 
 # libs installed with checkinstall are not in the default library path
 ENV LD_LIBRARY_PATH=/usr/local/lib
