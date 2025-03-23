@@ -3,8 +3,7 @@ ARG postgresql_major=17
 ARG postgresql_release=${postgresql_major}.4
 
 # https://github.com/jedisct1/libsodium/releases
-# The current pgsodium (3.1.9) requires libsodium.so.23
-ARG libsodium_release=1.0.18
+ARG libsodium_release=1.0.20
 # https://github.com/eradman/pg-safeupdate/tags
 ARG pg_safeupdate_release=1.5
 # https://github.com/supabase/pg_net/releases
@@ -12,7 +11,7 @@ ARG pg_net_release=0.14.0
 # https://github.com/pgexperts/pg_plan_filter/commits/master/
 ARG pg_plan_filter_release=5081a7b5cb890876e67d8e7486b6a64c38c9a492
 # https://github.com/supabase/vault/releases
-ARG vault_release=0.2.9
+ARG vault_release=0.3.1
 
 FROM postgres:${postgresql_release}-${debian_version} AS builder
 ARG postgresql_major
@@ -84,7 +83,7 @@ RUN --mount=type=cache,target=/ccache,from=public.ecr.aws/supabase/postgres:ccac
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion=1 --nodoc
 
-FROM builder AS vault-source
+FROM libsodium-source AS vault-source
 ARG vault_release
 # Download and extract
 ADD "https://github.com/supabase/vault/archive/refs/tags/v${vault_release}.tar.gz" \
@@ -98,22 +97,20 @@ RUN make -j$(nproc)
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 # https://github.com/cloudnative-pg/postgres-containers/blob/main/Debian/17/bookworm/Dockerfile
-FROM ghcr.io/cloudnative-pg/postgresql:${postgresql_release}-${debian_version}
+FROM ghcr.io/cloudnative-pg/postgresql:${postgresql_release}-202503170806-standard-${debian_version}
 
 ARG postgresql_major
 
 USER root
 
-# PGDATA is set in tembo-pg-slim and used by dependents on this image.
-RUN if [ -z "${PGDATA}" ]; then echo "PGDATA is not set"; exit 1; fi
-
 # Install trunk
-COPY --from=quay.io/tembo/tembo-pg-cnpg:17-3f42399 /usr/bin/trunk /usr/bin/trunk
+# https://quay.io/repository/tembo/tembo-pg-cnpg?tab=tags
+COPY --from=quay.io/tembo/tembo-pg-cnpg:17-bffd097 /usr/bin/trunk /usr/bin/trunk
 
 RUN trunk install pg_stat_statements
 RUN trunk install auto_explain
 RUN trunk install pg_cron
-RUN trunk install pgaudit
+# RUN trunk install pgaudit
 RUN trunk install pgjwt
 RUN trunk install pgsql_http
 RUN trunk install plpgsql_check
@@ -122,7 +119,6 @@ RUN trunk install wal2json
 RUN trunk install plv8
 RUN trunk install rum
 RUN trunk install pg_hashids
-RUN trunk install pgsodium
 RUN trunk install pg_graphql
 RUN trunk install pg_stat_monitor
 RUN trunk install pg_jsonschema
@@ -141,10 +137,10 @@ RUN set -eux; \
   cp -r $(pg_config --pkglibdir)/* /tmp/pg_pkglibdir; \
   cp -r $(pg_config --sharedir)/* /tmp/pg_sharedir
 
-COPY --from=libsodium-source /tmp/*.deb /tmp/
 COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
 COPY --from=pg_net-source /tmp/*.deb /tmp/
 COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
+# COPY --from=pgaudit-source /tmp/*.deb /tmp/
 COPY --from=vault-source /tmp/*.deb /tmp/
 
 RUN apt update && apt install -y --no-install-recommends \
@@ -158,4 +154,4 @@ ENV LD_LIBRARY_PATH=/usr/local/lib
 RUN usermod -u 26 postgres
 USER 26
 
-COPY --chown=26:26 --chmod=755 ./extension/pgsodium_getkey /usr/share/postgresql/${postgresql_major}/extension/pgsodium_getkey
+COPY --chown=26:26 --chmod=755 ./extension/vault_getkey /usr/share/postgresql/extension/vault_getkey
