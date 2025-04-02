@@ -156,23 +156,6 @@ RUN set -xe; \
   apt purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
   rm -rf /var/lib/apt/lists/* /var/cache/* /var/log/*;
 
-# Install barman-cloud
-COPY requirements.17.txt ./requirements.txt
-RUN set -xe; \
-  apt update; \
-  apt install -y --no-install-recommends \
-  # We require build-essential and python3-dev to build lz4 on arm64 since there isn't a pre-compiled wheel available
-  build-essential python3-dev \
-  python3-pip \
-  python3-psycopg2 \
-  python3-setuptools \
-  ; \
-  pip3 install --break-system-packages --upgrade pip; \
-  # TODO: Remove --no-deps once https://github.com/pypa/pip/issues/9644 is solved
-  pip3 install --break-system-packages --no-deps -r requirements.txt; \
-  apt remove -y --purge --autoremove build-essential python3-dev; \
-  rm -rf /var/lib/apt/lists/* /var/cache/* /var/log/* requirements.txt;
-
 # libs installed with checkinstall are not in the default library path
 ENV LD_LIBRARY_PATH=/usr/local/lib
 
