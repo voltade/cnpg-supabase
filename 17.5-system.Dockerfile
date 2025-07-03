@@ -283,7 +283,9 @@ WORKDIR /tmp/plv8
 RUN sed -i 's/error.log(WARNING, "Unhandled Promise rejection: %s");/error.log(ERROR, "Unhandled Promise rejection: %s");/' plv8.cc
 ENV DOCKER=1
 ENV CXXFLAGS="-Wno-error -Wno-return-type -Wno-invalid-offsetof -Wno-class-memaccess -Wno-use-after-free -Wno-maybe-uninitialized"
-RUN --mount=type=cache,target=/ccache make -j$(nproc)
+RUN --mount=type=cache,id=plv8-build,target=/tmp/plv8/build \
+    --mount=type=cache,id=ccache,target=/ccache \
+    make -j$(nproc)
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
