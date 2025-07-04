@@ -452,7 +452,9 @@ RUN set -eux; \
   cp -r $(pg_config --pkglibdir)/* /tmp/pg_pkglibdir; \
   cp -r $(pg_config --sharedir)/* /tmp/pg_sharedir
 
+COPY --from=libsodium-source /tmp/*.deb /tmp/
 COPY --from=pg-safeupdate-source /tmp/*.deb /tmp/
+COPY --from=pg_cron-source /tmp/*.deb /tmp/
 COPY --from=pg_net-source /tmp/*.deb /tmp/
 COPY --from=pg_plan_filter-source /tmp/*.deb /tmp/
 COPY --from=pgjwt-source /tmp/*.deb /tmp/
@@ -460,7 +462,7 @@ COPY --from=vault-source /tmp/*.deb /tmp/
 COPY --from=pgsql-http-source /tmp/*.deb /tmp/
 COPY --from=plpgsql_check-source /tmp/*.deb /tmp/
 COPY --from=wal2json-source /tmp/*.deb /tmp/
-COPY --from=plv8-source /tmp/*.deb /tmp/
+COPY --from=plv8-source /tmp/plv8/*.deb /tmp/
 COPY --from=rum-source /tmp/*.deb /tmp/
 COPY --from=pg_hashids-source /tmp/*.deb /tmp/
 COPY --from=pg_stat_monitor-source /tmp/*.deb /tmp/
@@ -490,7 +492,7 @@ RUN set -xe; \
 ENV LD_LIBRARY_PATH=/usr/local/lib
 
 # Revert the postgres user to id 26
-RUN usermod -u 26 postgres
+RUN usermod -u 26 postgres && chown -R 26:26 /var/run/postgresql
 USER 26
 
 # Copy the getkey script for pgsodium
