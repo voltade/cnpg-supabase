@@ -14,8 +14,12 @@ jobs:
   build-and-push-image:
     strategy:
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm]
-    runs-on: ${{ matrix.os }}
+        os:
+          - runner: ubuntu-24.04
+            platform: linux/amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux/arm64
+    runs-on: ${{ matrix.os.runner }}
     # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
     permissions:
       contents: read
@@ -57,15 +61,15 @@ jobs:
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@v6
-        continue-on-error: true
         with:
           context: .
           file: 17.5-system.Dockerfile
           push: true
+          platforms: ${{ matrix.os.platform }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.os }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.os }}
+          cache-from: type=gha,scope=${{ matrix.os.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.os.platform }}
 
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)."
       - name: Generate artifact attestation
