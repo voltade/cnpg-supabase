@@ -281,11 +281,10 @@ RUN git clone --branch v${plv8_release} --recurse-submodules --depth 1 https://g
 # Build from source
 WORKDIR /tmp/plv8
 RUN sed -i 's/error.log(WARNING, "Unhandled Promise rejection: %s");/error.log(ERROR, "Unhandled Promise rejection: %s");/' plv8.cc
-ENV DOCKER=1
-ENV CXXFLAGS="-Wno-error -Wno-return-type -Wno-invalid-offsetof -Wno-class-memaccess -Wno-use-after-free -Wno-maybe-uninitialized"
 RUN --mount=type=cache,id=plv8-build,target=/tmp/plv8/build \
-    --mount=type=cache,id=ccache,target=/ccache \
-    make -j$(nproc)
+  --mount=type=cache,id=ccache,target=/ccache \
+  make plv8_config.h plv8.so -j$(nproc)
+
 # Create debian package
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
