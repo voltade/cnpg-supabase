@@ -277,12 +277,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   libstdc++-12-dev \
   && rm -rf /var/lib/apt/lists/*
 # Clone source and submodules
-RUN git clone --branch v${plv8_release} --recurse-submodules --depth 1 https://github.com/plv8/plv8.git /tmp/plv8
+RUN git clone --branch v${plv8_release} --recurse-submodules --depth 1 https://github.com/plv8/plv8.git /tmp/plv8-${plv8_release}
 # Build from source
-WORKDIR /tmp/plv8
+WORKDIR /tmp/plv8-${plv8_release}
 RUN sed -i 's/error.log(WARNING, "Unhandled Promise rejection: %s");/error.log(ERROR, "Unhandled Promise rejection: %s");/' plv8.cc
-RUN --mount=type=cache,id=plv8-build,target=/tmp/plv8/build \
+RUN --mount=type=cache,id=plv8-${plv8_release}/build,target=/tmp/plv8-${plv8_release}/build \
   --mount=type=cache,id=ccache,target=/ccache \
+  # build plv8_config.h first to prevent parallel build overwriting it
   make plv8_config.h plv8.so -j$(nproc)
 
 # Create debian package
@@ -462,7 +463,7 @@ COPY --from=vault-source /tmp/*.deb /tmp/
 COPY --from=pgsql-http-source /tmp/*.deb /tmp/
 COPY --from=plpgsql_check-source /tmp/*.deb /tmp/
 COPY --from=wal2json-source /tmp/*.deb /tmp/
-COPY --from=plv8-source /tmp/plv8/*.deb /tmp/
+COPY --from=plv8-source /tmp/*.deb /tmp/
 COPY --from=rum-source /tmp/*.deb /tmp/
 COPY --from=pg_hashids-source /tmp/*.deb /tmp/
 COPY --from=pg_stat_monitor-source /tmp/*.deb /tmp/
