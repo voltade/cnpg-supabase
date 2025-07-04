@@ -280,7 +280,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN git clone --branch v${plv8_release} --recurse-submodules --depth 1 https://github.com/plv8/plv8.git /tmp/plv8-${plv8_release}
 # Build from source
 WORKDIR /tmp/plv8-${plv8_release}
-RUN sed -i 's/error.log(WARNING, "Unhandled Promise rejection: %s");/error.log(ERROR, "Unhandled Promise rejection: %s");/' plv8.cc
 RUN --mount=type=cache,id=plv8-${plv8_release}/build,target=/tmp/plv8-${plv8_release}/build \
   --mount=type=cache,id=ccache,target=/ccache \
   # build plv8_config.h first to prevent parallel build overwriting it
