@@ -70,6 +70,7 @@ jobs:
     needs: build
     permissions:
       packages: write
+      contents: read # Needed to get repository owner and name
     steps:
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -88,3 +89,28 @@ jobs:
             --amend ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_tag.outputs.tag }}-amd64 \
             --amend ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_tag.outputs.tag }}-arm64
           docker manifest push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_tag.outputs.tag }}
+
+      - name: Delete platform-specific tags with gh CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          PACKAGE_NAME=$(echo "${{ env.IMAGE_NAME }}" | cut -d'/' -f2)
+
+          delete_tag() {
+            local tag=$1
+            echo "Deleting tag: $tag"
+            
+            VERSION_ID=$(gh package versions "$PACKAGE_NAME" --owner "${{ github.repository_owner }}" --package-type container --json id,metadata --jq --arg TAG "$tag" '.[] | select(.metadata.container.tags[] == $TAG) | .id')
+
+            if [ -z "$VERSION_ID" ]; then
+              echo "Warning: Could not find version for tag '$tag'. Skipping deletion."
+              return
+            fi
+
+            echo "Found version ID '$VERSION_ID' for tag '$tag'. Deleting..."
+            gh package delete "$PACKAGE_NAME" --version "$VERSION_ID" --owner "${{ github.repository_owner }}" --package-type container --yes
+          }
+
+          delete_tag "${{ steps.get_tag.outputs.tag }}-amd64"
+          delete_tag "${{ steps.get_tag.outputs.tag }}-arm64"
