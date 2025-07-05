@@ -100,8 +100,10 @@ jobs:
           delete_tag() {
             local tag=$1
             echo "Deleting tag: $tag"
-            
-            VERSION_ID=$(gh package versions "$PACKAGE_NAME" --owner "${{ github.repository_owner }}" --package-type container --json id,metadata --jq --arg TAG "$tag" '.[] | select(.metadata.container.tags[] == $TAG) | .id')
+
+            ORG="${{ github.repository_owner }}"
+
+            VERSION_ID = $(gh api /orgs/$ORG/packages/container/$PACKAGE_NAME/versions | jq --arg TAG "$tag" '.[] | select(.metadata.container.tags[] == $TAG) | .id')
 
             if [ -z "$VERSION_ID" ]; then
               echo "Warning: Could not find version for tag '$tag'. Skipping deletion."
@@ -109,7 +111,7 @@ jobs:
             fi
 
             echo "Found version ID '$VERSION_ID' for tag '$tag'. Deleting..."
-            gh package delete "$PACKAGE_NAME" --version "$VERSION_ID" --owner "${{ github.repository_owner }}" --package-type container --yes
+            gh api --method DELETE /orgs/$ORG/packages/container/$PACKAGE_NAME/versions/$VERSION_ID
           }
 
           delete_tag "${{ steps.get_tag.outputs.tag }}-amd64"
