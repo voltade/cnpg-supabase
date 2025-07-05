@@ -33,8 +33,8 @@ ARG plpgsql_check_release=2.8.1
 # https://github.com/eulerto/wal2json/releases
 ARG wal2json_release=2_6
 
-# # https://github.com/plv8/pljs/tags
-# ARG pljs_release=1.0.1
+# https://github.com/plv8/pljs/tags
+ARG pljs_release=1.0.1
 
 # https://github.com/plv8/plv8/tags
 ARG plv8_release=3.2.3
@@ -246,23 +246,23 @@ RUN make -j$(nproc)
 ENV version=${wal2json_release}
 RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --pkgversion="\${version/_/.}" --nodoc
 
-# FROM ccache AS pljs-source
-# ARG pljs_release
-# # Install build dependencies
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#   ca-certificates \
-#   gcc \
-#   git \
-#   && rm -rf /var/lib/apt/lists/*
-# # Clone source and submodules
-# RUN git clone --branch v${pljs_release} --recurse-submodules --depth 1 https://github.com/plv8/pljs.git /tmp/pljs
-# # Build from source
-# WORKDIR /tmp/pljs
-# # Patch quickjs Makefile to add -fPIC and a valid version
-# RUN sed -i "s/CFLAGS+=-g -Wall/CFLAGS+=-fPIC -g -Wall/" deps/quickjs/Makefile
-# RUN --mount=type=cache,target=/ccache make -j$(nproc)
-# # Create debian package
-# RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
+FROM ccache AS pljs-source
+ARG pljs_release
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  ca-certificates \
+  gcc \
+  git \
+  && rm -rf /var/lib/apt/lists/*
+# Clone source and submodules
+RUN git clone --branch v${pljs_release} --recurse-submodules --depth 1 https://github.com/plv8/pljs.git /tmp/pljs-${pljs_release}
+# Build from source
+WORKDIR /tmp/pljs-${pljs_release}
+# Patch quickjs Makefile to add -fPIC and a valid version
+RUN sed -i "s/CFLAGS+=-g -Wall/CFLAGS+=-fPIC -g -Wall/" deps/quickjs/Makefile
+RUN --mount=type=cache,target=/ccache make -j$(nproc)
+# Create debian package
+RUN checkinstall -D --install=no --fstrans=no --backup=no --pakdir=/tmp --nodoc
 
 FROM ccache AS plv8-source
 ARG plv8_release
@@ -462,6 +462,7 @@ COPY --from=vault-source /tmp/*.deb /tmp/
 COPY --from=pgsql-http-source /tmp/*.deb /tmp/
 COPY --from=plpgsql_check-source /tmp/*.deb /tmp/
 COPY --from=wal2json-source /tmp/*.deb /tmp/
+COPY --from=pljs-source /tmp/*.deb /tmp/
 COPY --from=plv8-source /tmp/*.deb /tmp/
 COPY --from=rum-source /tmp/*.deb /tmp/
 COPY --from=pg_hashids-source /tmp/*.deb /tmp/
