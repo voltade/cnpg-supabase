@@ -112,10 +112,10 @@ shared_buffers = 25% total memory
 {{- end }}
 
 {{/*
-max_connections = (compute size factor * 8) + 5
+max_connections = (compute size factor * 5) + 5
 */}}
 {{- define "cnpg-cluster.maxConnections" -}}
-{{- .Values.computeSizeFactor | mul 8 | add 5 }}
+{{- .Values.computeSizeFactor | mul 5 | add 5 }}
 {{- end }}
 
 {{/*
