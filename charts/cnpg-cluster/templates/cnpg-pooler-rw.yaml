@@ -1,0 +1,33 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Pooler
+metadata:
+  name: {{ include "cnpg-cluster.fullname" . }}-pooler-rw
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  cluster:
+    name: {{ include "cnpg-cluster.fullname" . }}
+
+  instances: {{ .Values.pooler.rw.instances }}
+  type: rw
+
+  # https://cloudnative-pg.io/documentation/current/connection_pooling/#pgbouncer-configuration-options
+  pgbouncer:
+    poolMode: {{ .Values.pooler.rw.mode }}
+    parameters:
+      max_client_conn: "{{ include "cnpg-cluster.pooler.maxClientConn" . }}"
+      default_pool_size: "{{ include "cnpg-cluster.pooler.defaultPoolSize" . }}"
+      max_db_connections: "{{ include "cnpg-cluster.pooler.maxDbConnections" . }}"
+
+  # https://cloudnative-pg.io/documentation/current/connection_pooling/#pod-templates
+  template:
+    spec:
+      containers:
+        - name: pgbouncer
+          resources:
+            requests:
+              memory: {{ mul (include "cnpg-cluster.computeFactor" . | int) 32 }}Mi
+              cpu: {{ mul (include "cnpg-cluster.computeFactor" . | int) 15 }}m
+            limits:
+              memory: {{ mul (include "cnpg-cluster.computeFactor" . | int) 64 }}Mi
+              cpu: {{ mul (include "cnpg-cluster.computeFactor" . | int) 45 }}m

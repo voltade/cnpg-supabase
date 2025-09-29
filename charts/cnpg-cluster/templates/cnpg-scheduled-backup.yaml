@@ -1,0 +1,17 @@
+{{- if .Values.backup.enabled }}
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: {{ include "cnpg-cluster.fullname" . }}-scheduled-backup
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  # https://elmah.io/tools/cron-parser/#{{ default (include "cnpg-cluster.randomBackupSchedule" .) .Values.backup.schedule | replace " " "_" }}
+  schedule: {{ default (include "cnpg-cluster.randomBackupSchedule" .) .Values.backup.schedule | quote }}
+  backupOwnerReference: self
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
+  cluster:
+    name: {{ include "cnpg-cluster.fullname" . }}
+{{- end }}

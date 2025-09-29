@@ -1,0 +1,65 @@
+imageName: ghcr.io/cloudnative-pg/postgresql:17.6-minimal-trixie
+
+instances: 3
+computeSizeFactor: 4
+
+affinity:
+  enablePodAntiAffinity: true
+  topologyKey: kubernetes.io/hostname
+  podAntiAffinityType: required
+  nodeSelector:
+    node-role.kubernetes.io/postgres: ""
+  tolerations:
+    - key: node-role.kubernetes.io/postgres
+      operator: Exists
+      effect: NoSchedule
+
+storageClass: standard
+storageSize: 4Gi
+
+objectStore:
+  endpoint: https://s3.ap-southeast-1.amazonaws.com
+  bucketName: cnpg-backups
+  s3CredentialsSecretName: aws-credentials
+  s3AccessKeyIdSecretKey: accessKeyId
+  s3SecretAccessKeySecretKey: secretAccessKey
+
+backup:
+  enabled: true
+  schedule: ""
+
+recovery:
+  # ========================================================================
+  # DISASTER RECOVERY MODES
+  # ========================================================================
+  #
+  # Mode 1: "fresh" - Create new cluster with fresh data
+  # Mode 2: "production" - Use recovery bootstrap (prevents fresh cluster creation)
+  # Mode 3: "recovery" - Recover from specific timeline
+  #
+  mode: "fresh" # Options: fresh, production, recovery
+
+  # Timeline configuration
+  timeline:
+    # Current writer timeline (update this for disaster recovery)
+    # Format: ISO 8601 timestamp (e.g., "2025-09-23T14:59:00+08:00")
+    writer: ""
+
+    # Source reader timeline (set to writer timeline after successful recovery)
+    # This makes future recoveries easier by avoiding timeline searches
+    reader: ""
+
+managedRoles:
+  - name: app
+    ensure: present
+    login: true
+    createrole: true
+    bypassrls: true
+
+pooler:
+  rw:
+    instances: 1
+    mode: transaction
+  ro:
+    instances: 1
+    mode: transaction
