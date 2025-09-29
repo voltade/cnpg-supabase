@@ -3,16 +3,7 @@ imageName: ghcr.io/cloudnative-pg/postgresql:17.6-minimal-trixie
 instances: 3
 computeSizeFactor: 4
 
-affinity:
-  enablePodAntiAffinity: true
-  topologyKey: kubernetes.io/hostname
-  podAntiAffinityType: required
-  nodeSelector:
-    node-role.kubernetes.io/postgres: ""
-  tolerations:
-    - key: node-role.kubernetes.io/postgres
-      operator: Exists
-      effect: NoSchedule
+affinity: {}
 
 storageClass: standard
 storageSize: 4Gi

@@ -79,6 +79,8 @@ spec:
     - name: recovery-object-store
       plugin:
         name: barman-cloud.cloudnative-pg.io
+        enabled: true
+        isWALArchiver: false
         parameters:
           barmanObjectName: {{ include "cnpg-cluster.fullname" . }}-object-store
           serverName: {{ .Values.recovery.timeline.reader | default .Values.recovery.timeline.writer | default (include "cnpg-cluster.now" .) | quote }}
@@ -88,6 +90,7 @@ spec:
   plugins:
     # Backup Object Store (push, read-write)
     - name: barman-cloud.cloudnative-pg.io
+      enabled: true
       isWALArchiver: true
       parameters:
         barmanObjectName: {{ include "cnpg-cluster.fullname" . }}-object-store
