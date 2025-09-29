@@ -29,6 +29,8 @@ recovery:
   # Mode 3: "recovery" - Recover from specific timeline
   #
   mode: "fresh" # Options: fresh, production, recovery
+  # https://cloudnative-pg.io/documentation/current/recovery/#recovery-targets
+  target: {}
   # Timeline configuration
   timeline:
     # Source reader timeline (set to writer timeline after successful recovery)
