@@ -181,7 +181,7 @@ Schedule for automatic backups
 {{- define "cnpg-cluster.randomBackupSchedule" -}}
 {{- /* Deterministic pseudo-random schedule between 03:00–04:59 (UTC+8) */ -}}
 {{- /* Uses adler32 hash so it is stable across renders (good for GitOps) */ -}}
-{{- $seed := adler32sum (printf "%s-%s-%s" .Release.Name .Release.Namespace .Chart.Version) -}}
+{{- $seed := adler32sum (printf "%s-%s" .Release.Name .Release.Namespace) -}}
 {{- $offset := mod $seed 120 -}}          {{/* 0..119 minutes in 2h window */}}
 {{- $hour := add 19 (div $offset 60) -}}    {{/* 3 or 4 */}}
 {{- $minute := mod $offset 60 -}}
