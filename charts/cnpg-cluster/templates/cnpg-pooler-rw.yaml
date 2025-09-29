@@ -1,3 +1,4 @@
+{{- if .Values.pooler.rw.enabled }}
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:
@@ -31,3 +32,4 @@ spec:
             limits:
               memory: {{ mul (include "cnpg-cluster.computeFactor" . | int) 64 }}Mi
               cpu: {{ mul (include "cnpg-cluster.computeFactor" . | int) 45 }}m
+{{- end }}

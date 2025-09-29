@@ -11,7 +11,9 @@ spec:
 
   instances: {{ .Values.instances }}
 
+  {{- if not (empty .Values.affinity) }}
   affinity: {{ .Values.affinity | toYaml | nindent 4 }}
+  {{- end }}
 
   # https://cloudnative-pg.io/documentation/current/resource_management/
   resources:

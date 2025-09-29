@@ -58,8 +58,10 @@ managedRoles:
 
 pooler:
   rw:
+    enabled: true
     instances: 1
     mode: transaction
   ro:
+    enabled: true
     instances: 1
     mode: transaction
