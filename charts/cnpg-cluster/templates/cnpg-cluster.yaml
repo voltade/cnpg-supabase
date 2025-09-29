@@ -50,6 +50,13 @@ spec:
       # Max connections from pooler + some overhead
       max_connections: {{ include "cnpg-cluster.maxConnections" . | quote }}
 
+    # https://cloudnative-pg.io/documentation/current/replication/#required-data-durability
+    # https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-SynchronousReplicaConfiguration
+    synchronous:
+      dataDurability: required
+      method: any
+      number: 1
+
   # https://cloudnative-pg.io/documentation/current/storage/
   storage:
     storageClass: {{ .Values.storageClass }}
