@@ -29,16 +29,14 @@ recovery:
   # Mode 3: "recovery" - Recover from specific timeline
   #
   mode: "fresh" # Options: fresh, production, recovery
-
   # Timeline configuration
   timeline:
-    # Current writer timeline (update this for disaster recovery)
-    # Format: ISO 8601 timestamp (e.g., "2025-09-23T14:59:00+08:00")
-    writer: ""
-
     # Source reader timeline (set to writer timeline after successful recovery)
     # This makes future recoveries easier by avoiding timeline searches
     reader: ""
+    # Current writer timeline (update this for disaster recovery)
+    # Format: ISO 8601 timestamp (e.g., "2025-09-23T14:59:00+08:00")
+    writer: ""
 
 managedRoles:
   - name: app

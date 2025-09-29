@@ -98,9 +98,4 @@ spec:
   {{- end }}
 
   managed:
-    roles:
-      - name: app
-        ensure: present
-        login: true
-        createrole: true
-        bypassrls: true
+    roles: {{ toYaml .Values.managedRoles | nindent 6 }}
