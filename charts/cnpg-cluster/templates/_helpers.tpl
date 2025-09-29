@@ -170,7 +170,9 @@ Pooler sizing helpers
 {{- end }}
 
 {{- define "cnpg-cluster.now" -}}
-{{ now | date "2006-01-02T15:04:05-07:00"  }}
+{{- /* Renders current time in configured timezone (Values.timezone), falls back to local system tz */ -}}
+{{- $tz := .Values.timezone | default "Local" -}}
+{{- dateInZone "2006-01-02T15:04:05-07:00" (now) $tz -}}
 {{- end }}
 
 {{/*
