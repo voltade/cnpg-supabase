@@ -3,6 +3,16 @@ entries:
   cnpg-cluster:
   - apiVersion: v2
     appVersion: 1.27.0
+    created: "2025-09-30T18:31:50.124170356Z"
+    description: CloudNativePG Cluster Helm Chart
+    digest: 4fc50ac48fd913fe24a6580aab1bf798328a8205fa4115b60e433b77c82806bd
+    name: cnpg-cluster
+    type: application
+    urls:
+    - https://github.com/voltade/cnpg-supabase/releases/download/cnpg-cluster-0.1.10/cnpg-cluster-0.1.10.tgz
+    version: 0.1.10
+  - apiVersion: v2
+    appVersion: 1.27.0
     created: "2025-09-29T13:05:32.02953907Z"
     description: CloudNativePG Cluster Helm Chart
     digest: 0a842c53b1c25092054f7c609ca4ae8511aaad57b9f16032d9c4f03e333dfd80
@@ -101,4 +111,4 @@ entries:
     urls:
     - https://github.com/voltade/cnpg-supabase/releases/download/cnpg-cluster-0.1.0/cnpg-cluster-0.1.0.tgz
     version: 0.1.0
-generated: "2025-09-29T13:05:32.029591448Z"
+generated: "2025-09-30T18:31:50.124260866Z"
