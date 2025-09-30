@@ -8,7 +8,7 @@ spec:
   retentionPolicy: 15d
   configuration:
     endpointURL: {{ .Values.objectStore.endpoint }}
-    destinationPath: "s3://{{ .Values.objectStore.bucketName }}/{{ .Release.Namespace }}/{{ include "cnpg-cluster.fullname" . }}-backups"
+    destinationPath: "s3://{{ .Values.objectStore.bucketName }}/{{ .Release.Name }}/{{ include "cnpg-cluster.fullname" . }}-backups"
     s3Credentials:
       accessKeyId:
         name: {{ .Values.objectStore.s3CredentialsSecretName }}
