@@ -48,11 +48,13 @@ spec:
       max_parallel_workers_per_gather: "2"
       max_parallel_workers: "4"
 
+    {{ if (gt (.Values.instances | int) 1) }}
     # Synchronous replication for data durability
     synchronous:
       dataDurability: required
       method: any
       number: 1
+    {{- end }}
 
   storage:
     storageClass: {{ .Values.storageClass }}
