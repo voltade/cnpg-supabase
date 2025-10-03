@@ -6,58 +6,54 @@ metadata:
     argocd.argoproj.io/sync-wave: "-1"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
-  # https://github.com/cloudnative-pg/postgres-containers/pkgs/container/postgresql
   imageName: {{ .Values.imageName }}
-
   instances: {{ .Values.instances }}
 
   {{- if not (empty .Values.affinity) }}
   affinity: {{ .Values.affinity | toYaml | nindent 4 }}
   {{- end }}
 
-  # https://cloudnative-pg.io/documentation/current/resource_management/
-  resources:
-    requests:
-      memory: {{ include "cnpg-cluster.totalMemoryMB" . }}Mi
-      cpu: {{ include "cnpg-cluster.totalCPUMillicores" . }}m
-    limits:
-      memory: {{ include "cnpg-cluster.totalMemoryMB" . }}Mi
-      cpu: {{ include "cnpg-cluster.totalCPUMillicores" . }}m
+  resources: {{ .Values.resources | toYaml | nindent 4 }}
 
   postgresql:
     parameters:
-      # https://postgresqlco.nf/doc/en/param/shared_buffers/
-      # https://www.enterprisedb.com/postgres-tutorials/how-tune-postgresql-memory#section-1
-      # Total RAM * 0.25
       shared_buffers: {{ include "cnpg-cluster.sharedBuffersMB" . }}MB
-
-      # https://postgresqlco.nf/doc/en/param/work_mem/
-      # https://www.enterprisedb.com/postgres-tutorials/how-tune-postgresql-memory
-      # Total RAM * 0.25 / max_connections
       work_mem: {{ include "cnpg-cluster.workMemMB" . }}MB
-
-      # https://postgresqlco.nf/doc/en/param/maintenance_work_mem/
-      # https://www.enterprisedb.com/postgres-tutorials/how-tune-postgresql-memory#section-3
-      # Total RAM * 0.05
       maintenance_work_mem: {{ include "cnpg-cluster.maintenanceWorkMemMB" . }}MB
-      
-      # https://postgresqlco.nf/doc/en/param/effective_cache_size/
-      # https://www.enterprisedb.com/postgres-tutorials/how-tune-postgresql-memory#section-4
-      # Total RAM * 0.5
       effective_cache_size: {{ include "cnpg-cluster.effectiveCacheSizeMB" . }}MB
 
-      # https://postgresqlco.nf/doc/en/param/max_connections/
-      # Max connections from pooler + some overhead
+      # Connection settings
       max_connections: {{ include "cnpg-cluster.maxConnections" . | quote }}
 
-    # https://cloudnative-pg.io/documentation/current/replication/#required-data-durability
-    # https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-SynchronousReplicaConfiguration
+      # Query planner - optimized for SSD storage
+      random_page_cost: {{ include "cnpg-cluster.randomPageCost" . | quote }}
+      effective_io_concurrency: {{ include "cnpg-cluster.effectiveIOConcurrency" . | quote }}
+
+      # WAL settings for better write performance
+      wal_buffers: "16MB"
+      min_wal_size: "1GB"
+      max_wal_size: "4GB"
+
+      # Checkpoint tuning
+      checkpoint_completion_target: "0.9"
+
+      # Logging for PostgREST query analysis
+      log_min_duration_statement: "1000"  # Log slow queries > 1s
+      log_line_prefix: "%m [%p] %q%u@%d "
+
+      # Statistics for query optimization
+      default_statistics_target: "100"
+
+      # Parallel query settings (if sufficient CPU)
+      max_parallel_workers_per_gather: "2"
+      max_parallel_workers: "4"
+
+    # Synchronous replication for data durability
     synchronous:
       dataDurability: required
       method: any
       number: 1
 
-  # https://cloudnative-pg.io/documentation/current/storage/
   storage:
     storageClass: {{ .Values.storageClass }}
     size: {{ .Values.storageSize }}

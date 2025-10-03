@@ -1,4 +1,4 @@
-{{- if .Values.pooler.ro.enabled }}
+{{- if and .Values.pooler.ro.enabled (gt (.Values.pooler.ro.instances | int) 0) (gt (.Values.connections.pooler | int) 0) }}
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:
@@ -12,7 +12,6 @@ spec:
   instances: {{ .Values.pooler.ro.instances }}
   type: ro
 
-  # https://cloudnative-pg.io/documentation/current/connection_pooling/#pgbouncer-configuration-options
   pgbouncer:
     poolMode: {{ .Values.pooler.ro.mode }}
     parameters:
@@ -20,16 +19,9 @@ spec:
       default_pool_size: "{{ include "cnpg-cluster.pooler.defaultPoolSize" . }}"
       max_db_connections: "{{ include "cnpg-cluster.pooler.maxDbConnections" . }}"
 
-  # https://cloudnative-pg.io/documentation/current/connection_pooling/#pod-templates
   template:
     spec:
       containers:
         - name: pgbouncer
-          resources:
-            requests:
-              memory: {{ mul (include "cnpg-cluster.computeFactor" . | int) 32 }}Mi
-              cpu: {{ mul (include "cnpg-cluster.computeFactor" . | int) 15 }}m
-            limits:
-              memory: {{ mul (include "cnpg-cluster.computeFactor" . | int) 64 }}Mi
-              cpu: {{ mul (include "cnpg-cluster.computeFactor" . | int) 45 }}m
+          resources: {{ .Values.poolerResources | toYaml | nindent 12 }}
 {{- end }}

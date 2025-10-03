@@ -6,12 +6,12 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
+  cluster:
+    name: {{ include "cnpg-cluster.fullname" . }}
   # https://elmah.io/tools/cron-parser/#{{ default (include "cnpg-cluster.randomBackupSchedule" .) .Values.backup.schedule | replace " " "_" }}
   schedule: {{ default (include "cnpg-cluster.randomBackupSchedule" .) .Values.backup.schedule | quote }}
   backupOwnerReference: self
   method: plugin
   pluginConfiguration:
     name: barman-cloud.cloudnative-pg.io
-  cluster:
-    name: {{ include "cnpg-cluster.fullname" . }}
 {{- end }}

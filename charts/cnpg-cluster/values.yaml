@@ -1,9 +1,43 @@
 imageName: ghcr.io/cloudnative-pg/postgresql:17.6-minimal-trixie
 
 instances: 3
-computeSizeFactor: 4
 
 affinity: {}
+
+# PostgreSQL pod resources
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 300m
+  limits:
+    memory: 512Mi
+    cpu: 300m
+
+# Pooler pod resources
+poolerResources:
+  requests:
+    memory: 128Mi
+    cpu: 60m
+  limits:
+    memory: 256Mi
+    cpu: 180m
+
+# Connection allocation strategy
+# Total max_connections will be calculated from memory, then distributed:
+connections:
+  # System connections: CNPG replication, monitoring, migrations, psql, pgAdmin, maintenance
+  # Includes superuser access, background workers, and emergency access
+  # Recommended minimum: 10
+  system: 10
+
+  # Pooler connections: For application connections via PgBouncer
+  # Set to 0 to disable pooler and allocate remaining to direct connections
+  pooler: 0
+
+  # Direct connections: Uses internal connection pooling
+  # Gets all remaining connections after system and pooler allocation
+  # Automatically calculated as: max_connections - system - pooler
+  # direct: auto
 
 storageClass: standard
 storageSize: 4Gi
