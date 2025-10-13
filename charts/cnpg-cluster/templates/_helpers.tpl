@@ -97,8 +97,8 @@ Formula: (~totalMemoryMB / 10) capped between 25-200
 Validate that pooler and direct are not both "auto"
 */}}
 {{- define "cnpg-cluster.validateConnections" -}}
-{{- $pooler := .Values.connections.pooler -}}
-{{- $direct := .Values.connections.direct -}}
+{{- $pooler := .Values.connections.pooler | toString -}}
+{{- $direct := .Values.connections.direct | toString -}}
 {{- if and (eq $pooler "auto") (eq $direct "auto") -}}
   {{- fail "Error: connections.pooler and connections.direct cannot both be set to 'auto'" -}}
 {{- end -}}
@@ -116,7 +116,7 @@ Pooler connections: For application traffic via PgBouncer
 */}}
 {{- define "cnpg-cluster.poolerConnections" -}}
 {{- include "cnpg-cluster.validateConnections" . -}}
-{{- $pooler := .Values.connections.pooler -}}
+{{- $pooler := .Values.connections.pooler | toString -}}
 {{- if eq $pooler "auto" -}}
   {{- $max := include "cnpg-cluster.maxConnections" . | int -}}
   {{- $reserved := include "cnpg-cluster.reservedConnections" . | int -}}
@@ -124,7 +124,7 @@ Pooler connections: For application traffic via PgBouncer
   {{- $remaining := sub (sub $max $reserved) $direct -}}
   {{- if lt $remaining 0 }}0{{ else }}{{ $remaining }}{{ end }}
 {{- else -}}
-  {{- $pooler | default 0 | int -}}
+  {{- $pooler | int -}}
 {{- end -}}
 {{- end }}
 
@@ -133,7 +133,7 @@ Direct connections: Calculated as remaining after reserved and pooler
 */}}
 {{- define "cnpg-cluster.directConnections" -}}
 {{- include "cnpg-cluster.validateConnections" . -}}
-{{- $direct := .Values.connections.direct -}}
+{{- $direct := .Values.connections.direct | toString -}}
 {{- if eq $direct "auto" -}}
   {{- $max := include "cnpg-cluster.maxConnections" . | int -}}
   {{- $reserved := include "cnpg-cluster.reservedConnections" . | int -}}
