@@ -25,19 +25,21 @@ poolerResources:
 # Connection allocation strategy
 # Total max_connections will be calculated from memory, then distributed:
 connections:
-  # System connections: CNPG replication, monitoring, migrations, psql, pgAdmin, maintenance
+  # Reserved connections: CNPG replication, monitoring, migrations, psql, pgAdmin, maintenance
   # Includes superuser access, background workers, and emergency access
   # Recommended minimum: 10
-  system: 10
+  reserved: 10
 
   # Pooler connections: For application connections via PgBouncer
-  # Set to 0 to disable pooler and allocate remaining to direct connections
+  # Set to 0 to disable pooler, set to "auto" to allocate remaining connections
+  # Cannot be "auto" if direct is also "auto"
   pooler: 0
 
   # Direct connections: Uses internal connection pooling
-  # Gets all remaining connections after system and pooler allocation
-  # Automatically calculated as: max_connections - system - pooler
-  # direct: auto
+  # Set to "auto" to allocate remaining connections after reserved and pooler
+  # Cannot be "auto" if pooler is also "auto"
+  # Automatically calculated as: max_connections - reserved - pooler
+  direct: auto
 
 storageClass: standard
 storageSize: 4Gi
