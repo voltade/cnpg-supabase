@@ -1,4 +1,5 @@
-{{- if and .Values.pooler.rw.enabled (gt (.Values.pooler.rw.instances | int) 0) (gt (.Values.connections.pooler | int) 0) }}
+{{- $poolerConn := include "cnpg-cluster.poolerConnections" . | int }}
+{{- if and .Values.pooler.rw.enabled (gt (.Values.pooler.rw.instances | int) 0) (gt $poolerConn 0) }}
 apiVersion: postgresql.cnpg.io/v1
 kind: Pooler
 metadata:
