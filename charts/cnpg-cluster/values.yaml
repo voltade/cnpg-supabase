@@ -10,6 +10,7 @@ superuser:
     name: superuser-credentials
     labels:
       cnpg.io/reload: "true"
+    annotations: {}
 
 # PostgreSQL pod resources
 resources:
