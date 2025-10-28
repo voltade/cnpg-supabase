@@ -4,6 +4,13 @@ instances: 3
 
 affinity: {}
 
+superuser:
+  enabled: false
+  secret:
+    name: superuser-credentials
+    labels:
+      cnpg.io/reload: "true"
+
 # PostgreSQL pod resources
 resources:
   requests:

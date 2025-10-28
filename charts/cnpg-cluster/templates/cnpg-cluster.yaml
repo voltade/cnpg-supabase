@@ -15,6 +15,14 @@ spec:
 
   resources: {{ .Values.resources | toYaml | nindent 4 }}
 
+  {{- if .Values.superuser.enabled }}
+  enabledSuperuser: true
+  {{- end }}
+  {{- if .Values.superuser.secret.name }}
+  superuserSecret: 
+    name: {{ .Values.superuser.secret.name }}
+  {{- end }}
+
   postgresql:
     parameters:
       shared_buffers: {{ include "cnpg-cluster.sharedBuffersMB" . }}MB
