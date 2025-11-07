@@ -16,7 +16,7 @@ spec:
   resources: {{ .Values.resources | toYaml | nindent 4 }}
 
   {{- if .Values.superuser.enabled }}
-  enabledSuperuser: true
+  enableSuperuserAccess: true
   {{- end }}
   {{- if .Values.superuser.secret.name }}
   superuserSecret: 

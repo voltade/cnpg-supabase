@@ -5,9 +5,9 @@ instances: 3
 affinity: {}
 
 superuser:
-  enabled: false
+  enabled: true
   secret:
-    name: superuser-credentials
+    name: ""
     labels:
       cnpg.io/reload: "true"
     annotations: {}
