@@ -52,6 +52,10 @@ connections:
 storageClass: standard
 storageSize: 4Gi
 
+# Additional shared preload libraries
+# vault.enabled automatically adds supabase_vault
+sharedPreloadLibraries: []
+
 objectStore:
   endpoint: https://s3.ap-southeast-1.amazonaws.com
   bucketName: cnpg-backups
@@ -100,3 +104,14 @@ pooler:
     enabled: true
     instances: 1
     mode: transaction
+
+# Supabase Vault (pgsodium) configuration
+# https://supabase.com/docs/guides/database/vault
+vault:
+  enabled: false
+  # Secret containing the pgsodium root key
+  secretName: pgsodium-root-key
+  # Key name within the secret
+  secretKey: pgsodium_root.key
+  # Path to the getkey script in the container
+  getkeyScript: /usr/share/postgresql/extension/pgsodium_getkey

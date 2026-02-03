@@ -56,6 +56,23 @@ spec:
       max_parallel_workers_per_gather: "2"
       max_parallel_workers: "4"
 
+      {{- if .Values.vault.enabled }}
+      # pgsodium configuration for Supabase Vault
+      # https://github.com/michelp/pgsodium
+      pgsodium.enable_event_trigger: "off"
+      pgsodium.getkey_script: {{ .Values.vault.getkeyScript | quote }}
+      {{- end }}
+    {{- $libs := .Values.sharedPreloadLibraries | default list }}
+    {{- if .Values.vault.enabled }}
+    {{- $libs = append $libs "supabase_vault" }}
+    {{- end }}
+    {{- if $libs }}
+    shared_preload_libraries:
+      {{- range $libs }}
+      - {{ . }}
+      {{- end }}
+    {{- end }}
+
     {{ if (gt (.Values.instances | int) 1) }}
     # Synchronous replication for data durability
     synchronous:
@@ -63,6 +80,22 @@ spec:
       method: any
       number: 1
     {{- end }}
+
+  {{- if .Values.vault.enabled }}
+  # https://cloudnative-pg.io/documentation/current/cluster_conf/#environment-variables
+  env:
+    - name: EXTENSION_PGSODIUM_KEY_FILE
+      value: /projected/pgsodium_root.key
+
+  # https://cloudnative-pg.io/documentation/current/cluster_conf/#projected-volumes
+  projectedVolumeTemplate:
+    sources:
+      - secret:
+          name: {{ .Values.vault.secretName }}
+          items:
+            - key: {{ .Values.vault.secretKey }}
+              path: pgsodium_root.key
+  {{- end }}
 
   storage:
     storageClass: {{ .Values.storageClass }}
