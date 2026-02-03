@@ -110,6 +110,26 @@ spec:
       localeCType: C
       localeCollate: C
       owner: app
+      {{- $initSQL := .Values.recovery.postInitApplicationSQL | default list }}
+      {{- if .Values.vault.enabled }}
+      {{- $appRole := (index .Values.managedRoles 0).name | default "app" }}
+      {{- $vaultSQL := list
+          "create schema if not exists extensions"
+          "create extension supabase_vault cascade"
+          (printf "grant usage on schema vault to %s" $appRole)
+          (printf "grant execute on all functions in schema vault to %s" $appRole)
+          (printf "grant select on all tables in schema vault to %s" $appRole)
+          (printf "grant delete on all tables in schema vault to %s" $appRole)
+          (printf "grant references on all tables in schema vault to %s" $appRole)
+      }}
+      {{- $initSQL = concat $vaultSQL $initSQL }}
+      {{- end }}
+      {{- if $initSQL }}
+      postInitApplicationSQL:
+        {{- range $initSQL }}
+        - {{ . | quote }}
+        {{- end }}
+      {{- end }}
   {{- end }}
 
   {{- if or (eq .Values.recovery.mode "production") (eq .Values.recovery.mode "recovery") }}

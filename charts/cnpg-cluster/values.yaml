@@ -77,6 +77,11 @@ recovery:
   # Mode 3: "recovery" - Recover from specific timeline
   #
   mode: "fresh" # Options: fresh, production, recovery
+  # SQL statements to run after initdb (fresh mode only)
+  postInitApplicationSQL: []
+  # Example:
+  # postInitApplicationSQL:
+  #   - create extension supabase_vault cascade;
   # https://cloudnative-pg.io/documentation/current/recovery/#recovery-targets
   target: {}
   # Timeline configuration
